@@ -490,6 +490,7 @@
                     <button onclick="searchOrders()">검색</button>
                     <button class="add-new" onclick="openModal('add-order-modal')">+ 신규 주문 추가</button>
                 </div>
+            
                 <table>
                     <thead>
                         <tr>
@@ -505,12 +506,12 @@
                         </tr>
                     </thead>
                     <tbody id="order-table-body">
-                    </tbody>
+                        </tbody>
                 </table>
                 <div class="pagination" id="order-pagination">
                     <button>&laquo;</button><button class="active">1</button><button>&raquo;</button>
                 </div>
-            </section>
+                </section>
 
             <section id="supplier-mgmt-view" style="display: none;">
                 <h2><span class="icon">🛒</span> 공급처 관리 (평가 포함)</h2>
@@ -1659,10 +1660,11 @@
     </div>
     </div>
     <div id="add-order-modal" class="modal">
-        <div class="modal-content large"> <span class="close-button"
-                onclick="closeModal('add-order-modal')">&times;</span>
-            <h2 id="order-modal-title">신규 주문 등록</h2> <input type="hidden" id="edit-order-id" name="orderIdToEdit">
-
+        <div class="modal-content large">
+            <span class="close-button" onclick="closeModal('add-order-modal')">&times;</span>
+            <h2 id="order-modal-title">신규 주문 등록</h2>
+            <input type="hidden" id="edit-order-id" name="orderIdToEdit">
+    
             <div class="form-row">
                 <div class="form-group">
                     <label for="add-order-number">주문번호:</label>
@@ -1677,106 +1679,103 @@
                     <input type="date" id="add-order-delivery-date" name="requestedDeliveryDate" required>
                 </div>
             </div>
-
+    
             <div class="form-row">
                 <div class="form-group">
-                    <label for="add-order-customer">고객사:</label>
-                    <input type="text" id="add-order-customer-name" name="customerName" placeholder="고객사 검색..."
-                        required>
+                    <label for="add-order-customer-name">고객사:</label>
+                    <input type="text" id="add-order-customer-name" name="customerName" placeholder="고객사 검색..." required>
                     <input type="hidden" id="add-order-customer-id" name="customerId">
                 </div>
                 <div class="form-group">
-                    <label for="add-order-rep">담당자(자사):</label>
+                    <label for="add-order-rep-name">담당자(자사):</label>
                     <input type="text" id="add-order-rep-name" name="representativeName" readonly>
                     <input type="hidden" id="add-order-rep-id" name="representativeUserId">
                 </div>
             </div>
-
+    
             <div class="form-group full-width">
                 <label for="add-order-source-quote">관련 견적:</label>
-                <input type="text" id="add-order-source-quote-number" name="sourceQuoteNumber"
-                    placeholder="관련 견적번호 검색/선택 (선택사항)">
+                <input type="text" id="add-order-source-quote-number" name="sourceQuoteNumber" placeholder="관련 견적번호 검색/선택 (선택사항)">
                 <input type="hidden" id="add-order-source-quote-id" name="sourceQuoteId">
             </div>
-
-            <div class="filter-area" style="margin-bottom: 15px;">
-                <input type="text" id="quote-item-search-input" placeholder="품목 코드 또는 이름 검색..." style="width: 300px;">
-                <button type="button" onclick="searchQuoteItems()">검색</button>
+    
+            <hr>
+            <h4>주문 품목</h4>
+    
+            <div class="filter-area" style="margin-bottom: 10px;">
+                 <button type="button" onclick="openModal('order-item-search-modal')">+ 품목 검색 추가</button>
+                 </div>
+    
+            <div style="max-height: 300px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #eee;">
+                 <table id="order-items-table" style="width:100%;"> <thead>
+                           <tr>
+                               <th style="width: 5%;">No</th>
+                               <th style="width: 30%;">품목</th>
+                               <th style="width: 15%;">규격</th>
+                               <th style="width: 10%;">단위</th>
+                               <th style="width: 10%;">수량</th>
+                               <th style="width: 15%;">단가</th>
+                               <th style="width: 15%;">금액</th>
+                               <th style="width: 5%;">관리</th>
+                           </tr>
+                      </thead>
+                      <tbody id="order-items-table-body">
+                           </tbody>
+                 </table>
             </div>
-
-            <div style="max-height: 400px; overflow-y: auto;">
-                <table id="quote-item-search-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 20%;">품목 코드</th>
-                            <th style="width: 30%;">품목명</th>
-                            <th style="width: 20%;">규격</th>
-                            <th style="width: 10%;">단위</th>
-                            <th style="width: 10%;">판매 단가</th>
-                            <th style="width: 10%;">선택</th>
-                        </tr>
-                    </thead>
-                    <tbody id="quote-item-search-results">
-                        <tr>
-                            <td colspan="6" style="text-align:center;">검색어를 입력하고 검색 버튼을 누르세요. (제품만 검색됩니다)</td>
-                        </tr>
-                    </tbody>
-                </table>
+    
+            <hr>
+    
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="add-order-status-display">주문 상태:</label>
+                    <input type="text" id="add-order-status-display" name="orderStatusDisplay" value="접수 대기" readonly style="background-color: #e9ecef;">
+                    <input type="hidden" id="add-order-status" name="orderStatus" value="Pending">
+                </div>
+                 <div class="form-group"> <label for="add-order-total-amount" style="margin-right: 5px;">총액:</label>
+                     <input type="text" id="add-order-total-amount" name="totalAmount" value="0" readonly style="font-weight: bold; text-align: right; width: 150px;"> 원
+                 </div>
             </div>
-
-            <div style="margin-top: 20px; text-align: right;">
-                <button type="button" class="logout-button" onclick="closeModal('quote-item-search-modal')">닫기</button>
+    
+            <div class="form-group full-width">
+                <label for="add-order-notes">비고:</label>
+                <textarea id="add-order-notes" name="notes" rows="3" style="min-height: 60px;"></textarea>
             </div>
-        </div>
+            <div style="margin-top: 25px; text-align: center;">
+                <button type="submit">주문 저장</button> <button type="button" class="logout-button" onclick="closeModal('add-order-modal')">취소</button>
+            </div>
+    
+        </div> </div> <div id="order-item-search-modal" class="modal large">
+         <div class="modal-content">
+              <span class="close-button" onclick="closeModal('order-item-search-modal')">&times;</span>
+              <h2>주문 품목 검색 (제품)</h2>
+              <div class="filter-area" style="margin-bottom: 15px;">
+                   <input type="text" id="order-item-search-input" placeholder="품목 코드 또는 이름 검색..." style="width: 300px;">
+                   <button type="button" onclick="searchOrderItems()">검색</button> </div>
+              <div style="max-height: 400px; overflow-y: auto;">
+                   <table id="order-item-search-table"> <thead>
+                             <tr>
+                                  <th style="width: 20%;">품목 코드</th>
+                                  <th style="width: 30%;">품목명</th>
+                                  <th style="width: 20%;">규격</th>
+                                  <th style="width: 10%;">단위</th>
+                                  <th style="width: 10%;">판매 단가</th>
+                                  <th style="width: 10%;">선택</th>
+                             </tr>
+                        </thead>
+                        <tbody id="order-item-search-results">
+                             <tr>
+                                  <td colspan="6" style="text-align:center;">검색어를 입력하고 검색 버튼을 누르세요. (제품만 검색됩니다)</td>
+                             </tr>
+                        </tbody>
+                   </table>
+              </div>
+              <div style="margin-top: 20px; text-align: right;">
+                   <button type="button" class="logout-button" onclick="closeModal('order-item-search-modal')">닫기</button>
+              </div>
+         </div>
     </div>
 
-    <hr>
-    <h4>주문 품목</h4>
-    <table id="order-items-table" style="margin-top: 0;">
-        <thead>
-            <tr>
-                <th style="width: 5%;">No</th>
-                <th style="width: 30%;">품목</th>
-                <th style="width: 15%;">규격</th>
-                <th style="width: 10%;">단위</th>
-                <th style="width: 10%;">수량</th>
-                <th style="width: 15%;">단가</th>
-                <th style="width: 15%;">금액</th>
-                <th style="width: 5%;">관리</th>
-            </tr>
-        </thead>
-        <tbody id="order-items-table-body">
-        </tbody>
-    </table>
-    <button type="button" onclick="openModal('quote-item-search-modal')"
-        style="margin-top: 10px; background-color: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">+
-        품목 추가</button>
-    <hr>
-    <div class="form-row">
-        <div class="form-group">
-            <label for="add-order-total-amount">총액:</label>
-            <input type="text" id="add-order-total-amount" name="totalAmount" readonly
-                style="font-weight: bold; text-align: right;">
-        </div>
-        <div class="form-group">
-            <label for="add-order-status">주문 상태:</label>
-            <input type="text" id="add-order-status-display" name="orderStatusDisplay" value="접수 대기" readonly>
-            <input type="hidden" id="add-order-status" name="orderStatus" value="Pending">
-        </div>
-    </div>
-
-    <div class="form-group full-width">
-        <label for="add-order-notes">비고 (특이사항):</label>
-        <textarea id="add-order-notes" name="notes" rows="3"></textarea>
-    </div>
-
-
-    <div style="margin-top: 25px; text-align: center;">
-        <button type="submit">주문 저장</button> <button type="button" class="logout-button"
-            onclick="closeModal('add-order-modal')">취소</button>
-    </div>
-    </div>
-    </div>
     <div id="quote-item-search-modal" class="modal large">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal('quote-item-search-modal')">&times;</span>

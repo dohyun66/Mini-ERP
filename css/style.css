@@ -85,6 +85,25 @@ td button.write-button { background-color: #28a745; }
     background-color: #c82333; /* 약간 어두운 빨간색 */
 }
 
+/* --- 주문전환 버튼 스타일 (초록색) --- */
+.convert-order-button {
+    background-color: #28a745; /* 초록색 (예: Bootstrap success 색상) */
+    color: white;
+    /* 다른 버튼들과 스타일 통일성을 위한 속성들 */
+    border: none;
+    padding: 4px 8px; /* 다른 버튼과 동일하게 맞춤 */
+    font-size: 0.8em; /* 다른 버튼과 동일하게 맞춤 */
+    border-radius: 3px; /* 다른 버튼과 동일하게 맞춤 */
+    cursor: pointer;
+    vertical-align: middle;
+    margin-left: 4px; /* 다른 버튼과의 간격 */
+}
+
+/* 마우스를 올렸을 때(hover) */
+.convert-order-button:hover {
+    background-color: #218838; /* 약간 어두운 초록색 */
+}
+
 .pagination { text-align: center; margin-top: 20px; }
 .pagination { text-align: center; margin-top: 20px; }
 .pagination button { padding: 5px 10px; margin: 0 2px; cursor: pointer; background-color: #fff; border: 1px solid #dee2e6; border-radius: 4px;}

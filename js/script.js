@@ -91,6 +91,13 @@ const sampleQuotes = [
     // 필요하다면 다른 샘플 견적 데이터에도 items 배열을 추가하세요.
   ];
 
+  // 샘플 주문 데이터 저장용 배열 (초기에는 비어있거나 기존 주문 데이터 추가)
+let sampleOrders = [
+    // { id: 'ord-001', orderNumber: 'ORD20250420-001', customerName: '기존고객사', orderDate: '2025-04-20', ... items: [...] },
+];
+// 샘플 주문 ID 생성을 위한 변수 (간단한 방식)
+let nextOrderIdCounter = sampleOrders.length + 1;
+
 let nextItemId = Math.max(...items.map(i => i.id)) + 1; // ID 자동 증가 보완
 let nextUserId = Math.max(...users.map(u => u.id)) + 1;
 let nextPartnerId = Math.max(...partners.map(p => p.id)) + 1;
@@ -319,6 +326,121 @@ function handleItemTypeChange() {
     }
 }
 
+function convertToOrderFromList(quoteId) {
+    console.log(`리스트에서 견적 ${quoteId} 를 주문으로 직접 생성 시작`);
+
+    // 1. 원본 견적 데이터 찾기
+    const quote = sampleQuotes.find(q => q.id === quoteId);
+    if (!quote) {
+        alert("주문으로 전환할 원본 견적 정보를 찾을 수 없습니다.");
+        console.error(`ID '${quoteId}'에 해당하는 견적을 sampleQuotes에서 찾지 못했습니다.`);
+        return;
+    }
+
+    // --- (선택 사항) 견적 상태 확인 ---
+    // if (quote.status === 'Draft') { alert("..."); return; }
+    // -------------------------------
+
+    // 2. 새로운 주문 데이터 객체 생성
+    const today = new Date().toISOString().split('T')[0];
+    const newOrderId = `ORD-${today.replace(/-/g,'')}-${nextOrderIdCounter++}`; // 예: ORD20250425-1
+
+    const newOrder = {
+        id: newOrderId, // 고유 주문 ID
+        orderNumber: newOrderId, // 주문번호 (ID와 동일하게 사용, 필요시 다른 규칙 적용)
+        orderDate: today, // 주문일자 = 오늘
+        requestedDeliveryDate: '', // 납기요청일은 비워둠 (또는 기본값 설정)
+        customerName: quote.customerName,
+        // customerId: quote.customerId, // 고객 ID가 있다면 복사
+        representativeName: quote.authorName, // 담당자 (견적 작성자 정보 활용)
+        // representativeUserId: quote.authorId, // 담당자 ID가 있다면 복사
+        sourceQuoteId: quote.id, // 관련 견적 ID
+        sourceQuoteNumber: quote.quoteNumber, // 관련 견적 번호
+        totalAmount: quote.totalAmount, // 총액 (견적 금액 그대로 사용, 필요시 재계산)
+        orderStatus: 'Pending', // 주문 상태 (예: '접수 대기')
+        orderStatusText: '접수 대기', // 주문 상태 텍스트
+        notes: `견적 ${quote.quoteNumber} 에서 자동 전환됨.\n${quote.notes || ''}`, // 비고 (자동 전환 명시 및 견적 비고 추가)
+        items: quote.items.map(item => ({ // 품목 정보 복사 (깊은 복사)
+            itemId: item.itemId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice
+        }))
+    };
+
+    // 3. 생성된 주문 데이터를 sampleOrders 배열에 추가 ("저장" 역할)
+    sampleOrders.push(newOrder);
+    console.log("새로운 주문 데이터 생성 완료:", newOrder);
+    console.log("현재 주문 목록:", sampleOrders);
+
+    // 4. 사용자에게 성공 메시지 표시
+    alert(`견적 ${quote.quoteNumber} 가 주문 ${newOrder.orderNumber} 로 성공적으로 전환되었습니다!`);
+
+    // 5. 주문 관리 화면으로 이동
+    // (navigateToSection 함수가 화면 전환 및 해당 화면 데이터 로딩/표시를 담당한다고 가정)
+    navigateToSection('order-mgmt');
+
+    // --- 중요 ---
+    // navigateToSection('order-mgmt-view') 함수는 내부적으로
+    // 주문 목록 테이블을 최신 sampleOrders 데이터로 다시 그려주는 로직
+    // (예: displayOrders(sampleOrders) 호출)이 포함되어 있어야 합니다.
+    // 그렇지 않으면 화면 이동만 되고 새 주문이 목록에 보이지 않을 수 있습니다.
+    // ----------------
+}
+
+function displayOrders(orders) {
+    const orderTableBody = document.getElementById('order-table-body');
+    if (!orderTableBody) {
+        console.error("주문 테이블 body (order-table-body) 요소를 찾을 수 없습니다!");
+        return; // 테이블이 없으면 함수 종료
+    }
+    orderTableBody.innerHTML = ''; // 기존 테이블 내용 비우기
+
+    if (!orders || orders.length === 0) {
+        // 주문 데이터가 없으면 메시지 표시
+        const emptyRow = orderTableBody.insertRow();
+        const emptyCell = emptyRow.insertCell();
+        emptyCell.colSpan = 9; // 주문 테이블 컬럼 수에 맞게 조절
+        emptyCell.textContent = '표시할 주문 데이터가 없습니다.';
+        emptyCell.style.textAlign = 'center';
+        return;
+    }
+
+    // 주문 데이터를 하나씩 행으로 추가
+    orders.forEach((order, index) => {
+        const row = orderTableBody.insertRow();
+        row.insertCell().textContent = index + 1; // No
+        row.insertCell().textContent = order.orderNumber; // 주문번호
+        row.insertCell().textContent = order.customerName; // 고객사명
+        row.insertCell().textContent = order.orderDate; // 주문일자
+        row.insertCell().textContent = order.requestedDeliveryDate || '-'; // 납기요청일
+        const totalAmountCell = row.insertCell(); // 총액
+        totalAmountCell.textContent = order.totalAmount ? order.totalAmount.toLocaleString() : '-';
+        totalAmountCell.style.textAlign = 'right';
+        row.insertCell().textContent = order.orderStatusText || order.orderStatus; // 상태
+        row.insertCell().textContent = order.representativeName || '-'; // 담당자(자사)
+
+        // 관리 버튼 셀
+        const actionsCell = row.insertCell();
+        actionsCell.innerHTML = `
+            <button class="view-button" onclick="viewOrderDetails('${order.id}')">상세</button>
+            <button class="edit-button" onclick="openEditOrderModal('${order.id}')">수정</button>
+            <button class="delete-button" onclick="cancelOrder('${order.id}')">취소</button>
+            `;
+            // 위 버튼들에 연결된 함수(viewOrderDetails 등)들도 필요합니다. (지금은 alert만 있어도 됨)
+    });
+    console.log("주문 목록 테이블 표시 완료.");
+}
+
+// --- 주문 관리용 버튼 함수 (임시 Placeholder) ---
+function viewOrderDetails(orderId) { alert(`View Order ${orderId} details needed`); }
+function openEditOrderModal(orderId) { alert(`Edit Order ${orderId} needed`); }
+function cancelOrder(orderId) {
+    if(confirm(`주문 ${orderId} 를 정말 취소하시겠습니까?`)) {
+        alert(`Cancel Order ${orderId} needed`);
+        // TODO: sampleOrders 배열에서 상태를 'Canceled' 등으로 변경하고 displayOrders(sampleOrders) 다시 호출
+    }
+}
+
 // --- Item Management Functions ---
 function renderItemList(itemList) { /* ... existing code ... */ }
 function viewItemDetails(itemId) { /* ... existing code ... */ }
@@ -461,6 +583,16 @@ function viewQuoteDetails(quoteId) {
 
     // 6. 모달 내용 업데이트
     detailsContentDiv.innerHTML = detailsHtml;
+
+    // 상세 모달 요소에 현재 보고 있는 견적의 ID를 저장
+    const detailsModal = document.getElementById('view-quote-details-modal');
+    if (detailsModal) {
+        detailsModal.setAttribute('data-current-quote-id', quoteId);
+        console.log(`상세 모달에 data-current-quote-id=${quoteId} 설정됨.`);
+    } else {
+         console.error("상세 모달(view-quote-details-modal) 요소를 찾을 수 없음.");
+    }
+    // -----------------
 
     // 7. 모달 창 열기
     openModal('view-quote-details-modal');
@@ -651,7 +783,59 @@ function loadTemplate() { alert('Load Template needed'); }
 function toggleRelevantDepartments(prefix) { alert('Toggle Relevant Depts needed'); }
 function openTask(taskId) { alert(`Open Task ${taskId} details needed`); }
 function createDocumentFromFavorite(templateId) { alert(`Create document from template ${templateId} needed`); }
-function navigateToSection(targetId, params = {}) { /* ... existing code ... */ }
+
+function navigateToSection(targetId, params = {}) {
+    console.log(`Navigating to: ${targetId}`);
+    // 모든 섹션 숨기기
+    document.querySelectorAll('.main-content section').forEach(section => {
+        section.style.display = 'none';
+    });
+
+    // 대상 섹션 표시 (ID가 '-view'로 끝난다고 가정)
+    const targetSection = document.getElementById(targetId + '-view');
+    if (targetSection) {
+        targetSection.style.display = 'block';
+        console.log(`Section ${targetId}-view displayed.`);
+
+        // --- 중요: 섹션별 데이터 로딩/표시 로직 ---
+        if (targetId === 'quote-mgmt') {
+            console.log(">>> navigateToSection: displayQuotes 호출 직전 sampleQuotes 상태:", JSON.stringify(sampleQuotes.map(q => ({id: q.id, status: q.status}))));
+            displayQuotes(sampleQuotes); // 견적 목록 표시 함수 호출
+        } else if (targetId === 'order-mgmt') {
+            console.log("주문 관리 섹션 활성화됨. 주문 목록 표시.");
+            displayOrders(sampleOrders); // <<< 주문 목록 표시 함수 호출 추가!
+        } else if (targetId === 'item-mgmt') {
+            // displayItems(items); // 예: 품목 관리
+        } // ... 다른 섹션 로드 시 필요한 함수 호출 추가 ...
+        // --- ---
+
+    } else {
+        console.error(`Target section view not found for id: ${targetId}-view`);
+        // document.getElementById('dashboard-overview-view').style.display = 'block'; // 기본 화면 표시
+    }
+
+    // 사이드바 메뉴 활성 상태 업데이트
+    updateSidebarActiveState(targetId); // (이 함수가 있다고 가정)
+}
+
+// 사이드바 업데이트 함수 (예시, 이미 있다면 수정 불필요)
+function updateSidebarActiveState(targetId) {
+    document.querySelectorAll('.sidebar nav a').forEach(link => {
+        link.classList.remove('active');
+        // href 속성에서 # 제거하고 비교
+        if (link.getAttribute('href') === `#${targetId}`) {
+            link.classList.add('active');
+            // 상위 메뉴도 활성화 (만약 접혀있다면 펼치기 등)
+            const parentLi = link.closest('li');
+            const parentUl = parentLi ? parentLi.closest('ul') : null;
+            const parentLink = parentUl && parentUl.previousElementSibling && parentUl.previousElementSibling.tagName === 'A' ? parentUl.previousElementSibling : null;
+            if(parentLink) {
+                 parentLink.classList.add('active'); // 상위 링크 활성화
+                 // 만약 하위 메뉴가 닫혀 있다면 펼치는 로직 추가 가능
+            }
+        }
+    });
+}
 
 // --- User Management Functions ---
 function renderUserList(userList) { /* ... existing code ... */ }
@@ -863,10 +1047,26 @@ function calculateQuoteTotal() {
 
 // 견적 데이터를 테이블에 표시하는 함수
 function displayQuotes(quotes) {
+    // ★★★ 1번 로그: 함수 시작 시점 확인 ★★★
+    console.log(">>> displayQuotes 시작. 전달받은 데이터 상태:", JSON.stringify(quotes.map(q => ({id: q.id, status: q.status}))));
+
     const quoteTableBody = document.getElementById('quote-table-body');
+    if (!quoteTableBody) {
+         console.error("견적 테이블 tbody 요소를 찾을 수 없습니다.");
+         return;
+    }
     quoteTableBody.innerHTML = ''; // 테이블 내용 초기화
-  
-    if (!quotes || quotes.length === 0) {
+
+    // --- 필터링 로직 ---
+    const displayableQuotes = quotes.filter(quote => quote.status !== 'Converted');
+    // --- 필터링 로직 끝 ---
+
+    // ★★★ 2번 로그: 필터링 후 결과 확인 (올바른 변수 사용) ★★★
+    console.log(">>> displayQuotes 필터링 후. 표시될 데이터 상태:", JSON.stringify(displayableQuotes.map(q => ({id: q.id, status: q.status}))));
+
+    // 중복되고 잘못된 변수 이름을 사용한 로그는 삭제했습니다.
+
+    if (!displayableQuotes || displayableQuotes.length === 0) { // <<< 필터링된 결과 확인
       const emptyRow = quoteTableBody.insertRow();
       const emptyCell = emptyRow.insertCell();
       emptyCell.colSpan = 9; // 테이블 컬럼 수에 맞게 조절
@@ -874,34 +1074,480 @@ function displayQuotes(quotes) {
       emptyCell.style.textAlign = 'center';
       return;
     }
-  
-    // 각 견적 데이터를 순회하며 테이블 행 생성
-    quotes.forEach((quote, index) => {
+
+    // 필터링된 견적만으로 테이블 생성
+    displayableQuotes.forEach((quote, index) => { // <<< 필터링된 결과 사용
       const row = quoteTableBody.insertRow();
-  
+
       row.insertCell().textContent = index + 1; // No (순번)
       row.insertCell().textContent = quote.quoteNumber;
       row.insertCell().textContent = quote.customerName;
       row.insertCell().textContent = quote.quoteDate;
       row.insertCell().textContent = quote.expiryDate;
-  
+
       const totalAmountCell = row.insertCell();
-      totalAmountCell.textContent = quote.totalAmount.toLocaleString();
+      totalAmountCell.textContent = quote.totalAmount ? quote.totalAmount.toLocaleString() : '-'; // 총액 (없을 경우 대비)
       totalAmountCell.style.textAlign = 'right';
-  
-      row.insertCell().textContent = quote.statusText;
+
+      row.insertCell().textContent = quote.statusText || quote.status; // 상태 텍스트 (없으면 status 코드)
       row.insertCell().textContent = quote.authorName;
-  
+
       const actionsCell = row.insertCell();
       actionsCell.innerHTML = `
         <button class="view-button" onclick="viewQuoteDetails('${quote.id}')">상세</button>
         <button class="edit-button" onclick="openEditQuoteModal('${quote.id}')">수정</button>
         <button class="delete-button" onclick="deleteQuote('${quote.id}')">삭제</button>
+        <button class="convert-order-button" onclick="convertToOrderFromList('${quote.id}')">주문전환</button>
       `;
-      // ---------------
     });
-  }
-  
+}
+
+// 견적모달 상세에서 주문으로 전환 함수
+function populateAndOpenOrderModalFromQuote(quote) {
+    if (!quote) {
+        alert("주문으로 전환할 견적 데이터가 없습니다.");
+        return;
+    }
+
+    // === 요소 가져오기 및 개별 확인 ===
+    let missingElementId = null;
+    const elementsToFind = [
+        'add-order-modal', 'order-modal-title', 'edit-order-id', 'add-order-date',
+        'add-order-delivery-date', 'add-order-customer-name', 'add-order-customer-id',
+        'add-order-rep-name', 'add-order-rep-id', 'add-order-source-quote-number',
+        'add-order-source-quote-id', 'add-order-status-display', 'add-order-status',
+        'add-order-notes', 'order-items-table-body', 'add-order-total-amount'
+    ];
+    const elements = {}; // 찾은 요소들을 저장할 객체
+
+    for (const id of elementsToFind) {
+        elements[id] = document.getElementById(id);
+        if (!elements[id]) {
+            missingElementId = id; // 요소를 찾지 못하면 ID 기록하고 중단
+            break;
+        }
+    }
+
+    // 만약 누락된 요소가 있다면 에러 메시지 표시 후 종료
+    if (missingElementId) {
+        const errorMsg = `주문 등록 모달 필수 요소 누락: ID '${missingElementId}' 요소를 찾을 수 없습니다. index.html 파일을 확인하세요.`;
+        alert(errorMsg); // 사용자에게 알림
+        console.error(errorMsg); // 개발자 콘솔에 에러 기록
+        return; // 함수 실행 중단
+    }
+    // ==================================
+
+    // 모든 요소를 찾았다면, 여기서부터 로직 계속 진행
+    console.log("모든 주문 등록 모달 요소 확인 완료.");
+
+    // 이제 elements 객체를 사용하여 요소에 접근합니다. (예: elements['order-modal-title'])
+    elements['order-modal-title'].textContent = "신규 주문 등록 (견적 기반)";
+    elements['edit-order-id'].value = ''; // 신규 등록
+
+    const today = new Date().toISOString().split('T')[0];
+    elements['add-order-date'].value = today;
+    elements['add-order-delivery-date'].value = '';
+
+    elements['add-order-customer-name'].value = quote.customerName || '';
+    // elements['add-order-customer-id'].value = quote.customerId || ''; // ID가 있다면
+
+    elements['add-order-rep-name'].value = quote.authorName || '';
+    // elements['add-order-rep-id'].value = quote.authorId || ''; // ID가 있다면
+
+    elements['add-order-source-quote-number'].value = quote.quoteNumber || '';
+    elements['add-order-source-quote-id'].value = quote.id || '';
+
+    elements['add-order-status-display'].value = "접수 대기";
+    elements['add-order-status'].value = "Pending";
+
+    elements['add-order-notes'].value = quote.notes || '';
+
+    // 주문 품목 테이블 채우기
+    const orderItemsTableBody = elements['order-items-table-body']; // elements 객체에서 가져옴
+    orderItemsTableBody.innerHTML = '';
+    if (quote.items && quote.items.length > 0) {
+        quote.items.forEach(quoteItem => {
+            const itemInfo = items.find(i => i.id === quoteItem.itemId);
+            if (itemInfo) {
+                addOrderItemRowWithData(itemInfo, quoteItem.quantity, quoteItem.unitPrice);
+            } else {
+                 console.warn(`주문 전환 중: 견적 품목 ID '${quoteItem.itemId}' 정보를 찾을 수 없음.`);
+            }
+        });
+    }
+
+    // 주문 총액 계산
+    calculateOrderTotal(); // 이 함수 내부에서도 'order-items-table-body'와 'add-order-total-amount' ID를 사용
+
+    // 모달 열기
+    openModal('add-order-modal');
+    console.log("주문 등록 모달 표시 완료 (견적 데이터 기반).");
+}
+
+/**
+ * 견적 상세 모달의 "주문으로 전환" 버튼 클릭 시 실행되는 함수
+ * - 주문 등록 모달을 띄우지 않고 바로 주문 생성 및 화면 이동
+ */
+function convertToOrder() {
+    // 1. 현재 열려있는 상세 모달에서 저장된 견적 ID 가져오기
+    const detailsModal = document.getElementById('view-quote-details-modal');
+    const quoteId = detailsModal ? detailsModal.getAttribute('data-current-quote-id') : null;
+
+    if (!quoteId) {
+        alert("현재 견적 ID를 찾을 수 없습니다. 상세 모달을 다시 열어주세요.");
+        console.error("상세 모달에서 'data-current-quote-id' 속성을 찾을 수 없음.");
+        return;
+    }
+
+    console.log(`상세 모달에서 주문 전환 시작 (Quote ID: ${quoteId})`);
+
+    // 2. 해당 견적 데이터 찾기
+    const quote = sampleQuotes.find(q => q.id === quoteId);
+    if (!quote) {
+        alert("주문으로 전환할 견적 정보를 찾을 수 없습니다.");
+        console.error(`ID '${quoteId}'에 해당하는 견적을 sampleQuotes에서 찾지 못했습니다.`);
+        return;
+    }
+
+    // --- (선택 사항) 견적 상태 확인 ---
+    if (quote.status === 'Converted') {
+         alert("이미 주문으로 전환된 견적입니다.");
+         closeModal('view-quote-details-modal'); // 확인 후 모달 닫기
+         return;
+    }
+    // -------------------------------
+
+    // 3. 현재 열려있는 상세 모달 닫기
+    closeModal('view-quote-details-modal');
+
+    // 4. 새로운 주문 데이터 객체 생성
+    const today = new Date().toISOString().split('T')[0];
+    const newOrderId = `ORD-${today.replace(/-/g,'')}-${nextOrderIdCounter++}`; // 예: ORD20250425-1
+
+    const newOrder = {
+        id: newOrderId,
+        orderNumber: newOrderId,
+        orderDate: today,
+        requestedDeliveryDate: '', // 납기요청일은 비워두거나 기본값 설정 (예: 7일 뒤)
+        customerName: quote.customerName,
+        // customerId: quote.customerId, // ID가 있다면 복사
+        representativeName: quote.authorName, // 담당자 정보 (필요시 수정)
+        // representativeUserId: quote.authorId, // ID가 있다면 복사
+        sourceQuoteId: quote.id,
+        sourceQuoteNumber: quote.quoteNumber,
+        totalAmount: quote.totalAmount, // 견적 금액 그대로 사용
+        orderStatus: 'Pending', // 초기 상태: 접수 대기
+        orderStatusText: '접수 대기',
+        notes: `견적 ${quote.quoteNumber} 에서 자동 전환됨.\n${quote.notes || ''}`,
+        items: quote.items.map(item => ({ // 품목 정보 깊은 복사
+            itemId: item.itemId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice
+        }))
+    };
+
+    // 5. 생성된 주문 데이터를 sampleOrders 배열에 추가 ("저장")
+    sampleOrders.push(newOrder);
+    console.log("새로운 주문 데이터 생성 및 추가 완료:", newOrder);
+
+    // 6. 원본 견적 상태 변경
+    const originalQuoteIndex = sampleQuotes.findIndex(q => q.id === quoteId);
+    if (originalQuoteIndex !== -1) {
+        sampleQuotes[originalQuoteIndex].status = 'Converted';
+        sampleQuotes[originalQuoteIndex].statusText = '주문됨';
+        console.log(`견적 ${quoteId}의 상태를 'Converted'로 변경했습니다.`);
+    } else {
+        console.warn(`상태를 변경할 원본 견적 ${quoteId}를 찾지 못했습니다.`);
+    }
+
+    // 7. 사용자에게 성공 메시지 표시
+    alert(`견적 ${quote.quoteNumber} 가 주문 ${newOrder.orderNumber} 로 성공적으로 전환되었습니다!`);
+
+    // 8. 주문 관리 화면으로 이동 및 목록 새로고침
+    navigateToSection('order-mgmt');
+}
+
+/**
+ * 견적 목록의 "주문전환" 버튼 클릭 시 실행되는 함수
+ * - 주문 등록 모달을 띄우지 않고 바로 주문 생성 및 화면 이동
+ * - (기존 로직에서 원본 견적 상태 변경 추가)
+ */
+function convertToOrderFromList(quoteId) {
+    console.log(`리스트에서 견적 ${quoteId} 를 주문으로 직접 생성 시작`);
+
+    // 1. 원본 견적 데이터 찾기
+    const quote = sampleQuotes.find(q => q.id === quoteId);
+    if (!quote) {
+        alert("주문으로 전환할 원본 견적 정보를 찾을 수 없습니다.");
+        console.error(`ID '${quoteId}'에 해당하는 견적을 sampleQuotes에서 찾지 못했습니다.`);
+        return;
+    }
+
+    // --- (선택 사항) 견적 상태 확인 ---
+    if (quote.status === 'Converted') {
+         alert("이미 주문으로 전환된 견적입니다.");
+         return; // 이미 전환되었으면 중단
+    }
+    // -------------------------------
+
+    // 2. 새로운 주문 데이터 객체 생성 (convertToOrder와 동일한 로직 사용)
+    const today = new Date().toISOString().split('T')[0];
+    const newOrderId = `ORD-${today.replace(/-/g,'')}-${nextOrderIdCounter++}`;
+
+    const newOrder = {
+        id: newOrderId,
+        orderNumber: newOrderId,
+        orderDate: today,
+        requestedDeliveryDate: '', // 필요시 기본값 설정
+        customerName: quote.customerName,
+        // customerId: quote.customerId,
+        representativeName: quote.authorName,
+        // representativeUserId: quote.authorId,
+        sourceQuoteId: quote.id,
+        sourceQuoteNumber: quote.quoteNumber,
+        totalAmount: quote.totalAmount,
+        orderStatus: 'Pending',
+        orderStatusText: '접수 대기',
+        notes: `견적 ${quote.quoteNumber} 에서 자동 전환됨.\n${quote.notes || ''}`,
+        items: quote.items.map(item => ({
+            itemId: item.itemId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice
+        }))
+    };
+
+    // 3. 생성된 주문 데이터를 sampleOrders 배열에 추가 ("저장")
+    sampleOrders.push(newOrder);
+    console.log("새로운 주문 데이터 생성 및 추가 완료:", newOrder);
+
+    // ★★★ 4. 원본 견적 상태 변경 (추가된 로직) ★★★
+    const originalQuoteIndex = sampleQuotes.findIndex(q => q.id === quoteId);
+    if (originalQuoteIndex !== -1) {
+        sampleQuotes[originalQuoteIndex].status = 'Converted';
+        sampleQuotes[originalQuoteIndex].statusText = '주문됨';
+        console.log(`견적 ${quoteId}의 상태를 'Converted'로 변경했습니다.`);
+        // 견적 목록 화면을 즉시 새로고침 (선택 사항)
+        // displayQuotes(sampleQuotes); // 현재 화면이 견적 목록이므로 바로 갱신
+    } else {
+        console.warn(`상태를 변경할 원본 견적 ${quoteId}를 찾지 못했습니다.`);
+    }
+
+    // 5. 사용자에게 성공 메시지 표시
+    alert(`견적 ${quote.quoteNumber} 가 주문 ${newOrder.orderNumber} 로 성공적으로 전환되었습니다!`);
+
+    // 6. 주문 관리 화면으로 이동
+    navigateToSection('order-mgmt');
+}
+
+/**
+ * 견적 데이터를 테이블에 표시하는 함수
+ * - 상태가 'Converted'인 견적은 제외하도록 필터링 추가
+ */
+function displayQuotes(quotes) {
+    // ★★★ 로그 1: 함수 시작 시점 확인 ★★★
+    console.log(">>> displayQuotes 시작. 전달받은 데이터 상태:", JSON.stringify(quotes.map(q => ({id: q.id, status: q.status}))));
+
+    const quoteTableBody = document.getElementById('quote-table-body');
+    if (!quoteTableBody) {
+         console.error("견적 테이블 tbody 요소를 찾을 수 없습니다.");
+         return;
+    }
+    quoteTableBody.innerHTML = ''; // 테이블 내용 초기화
+
+    // --- 필터링 로직 ---
+    const displayableQuotes = quotes.filter(quote => quote.status !== 'Converted');
+    // --- 필터링 로직 끝 ---
+
+    // ★★★ 로그 2: 필터링 후 결과 확인 ★★★
+    console.log(">>> displayQuotes 필터링 후. 표시될 데이터 상태:", JSON.stringify(displayableQuotes.map(q => ({id: q.id, status: q.status}))));
+
+    // 필터링된 결과가 없는 경우 확인
+    if (!displayableQuotes || displayableQuotes.length === 0) {
+      const emptyRow = quoteTableBody.insertRow();
+      const emptyCell = emptyRow.insertCell();
+      emptyCell.colSpan = 9; // 테이블 컬럼 수에 맞게 조절
+      emptyCell.textContent = '표시할 견적 데이터가 없습니다.';
+      emptyCell.style.textAlign = 'center';
+      // ★★★ 로그 3: 데이터 없음 확인 ★★★
+      console.log(">>> displayQuotes: 필터링 후 데이터 없음, '데이터 없음' 표시.");
+      return; // 데이터 없으면 여기서 함수 종료
+    }
+
+    // 필터링된 견적만으로 테이블 생성
+    displayableQuotes.forEach((quote, index) => { // <<< 필터링된 결과 사용
+        // ★★★ 로그 4: 실제로 어떤 행이 그려지는지 확인 ★★★
+        console.log(`>>> displayQuotes 루프: 행 그리는 중 - ID: ${quote.id}, 상태: ${quote.status}`);
+
+        const row = quoteTableBody.insertRow();
+        // ... (행 내용 채우기) ...
+        row.insertCell().textContent = index + 1;
+        row.insertCell().textContent = quote.quoteNumber;
+        row.insertCell().textContent = quote.customerName;
+        row.insertCell().textContent = quote.quoteDate;
+        row.insertCell().textContent = quote.expiryDate;
+        const totalAmountCell = row.insertCell();
+        totalAmountCell.textContent = quote.totalAmount ? quote.totalAmount.toLocaleString() : '-';
+        totalAmountCell.style.textAlign = 'right';
+        row.insertCell().textContent = quote.statusText || quote.status;
+        row.insertCell().textContent = quote.authorName;
+        const actionsCell = row.insertCell();
+        actionsCell.innerHTML = `
+          <button class="view-button" onclick="viewQuoteDetails('${quote.id}')">상세</button>
+          <button class="edit-button" onclick="openEditQuoteModal('${quote.id}')">수정</button>
+          <button class="delete-button" onclick="deleteQuote('${quote.id}')">삭제</button>
+          <button class="convert-order-button" onclick="convertToOrderFromList('${quote.id}')">주문전환</button>
+        `;
+    });
+}
+
+/**
+ * 특정 섹션으로 이동하고 해당 섹션의 데이터를 로드/표시하는 함수
+ * - order-mgmt 이동 시 displayOrders 호출 확인
+ */
+function navigateToSection(targetId, params = {}) {
+    console.log(`Navigating to: ${targetId}`);
+    document.querySelectorAll('.main-content section').forEach(section => {
+        section.style.display = 'none';
+    });
+
+    const targetSection = document.getElementById(targetId + '-view');
+    if (targetSection) {
+        targetSection.style.display = 'block';
+        console.log(`Section ${targetId}-view displayed.`);
+
+        if (targetId === 'quote-mgmt') {
+            // ★★★ 로그 추가 ★★★
+            console.log(">>> navigateToSection: displayQuotes 호출 직전 sampleQuotes 상태:", JSON.stringify(sampleQuotes.map(q => ({id: q.id, status: q.status}))));
+            displayQuotes(sampleQuotes);
+        } else if (targetId === 'order-mgmt') {
+            displayOrders(sampleOrders);
+        }
+        // ... (다른 섹션) ...
+    } else {
+        console.error(`Target section view not found for id: ${targetId}-view`);
+    }
+    updateSidebarActiveState(targetId);
+}
+
+// --- 이전에 제공된 다른 함수들 ---
+// displayOrders(orders) 함수는 이전에 제공된 코드에 있어야 합니다.
+// openModal, closeModal, updateSidebarActiveState 등 다른 함수들도 필요합니다.
+
+/**
+ * 주문 모달 테이블에 데이터와 함께 행 추가하는 함수
+ * @param {object} item - 품목 정보 객체 (items 배열의 요소)
+ * @param {number} quantity - 주문 수량
+ * @param {number} unitPrice - 주문 단가
+ */
+function addOrderItemRowWithData(item, quantity, unitPrice) {
+    const tableBody = document.getElementById('order-items-table-body'); // 주문 테이블 tbody ID
+    if (!tableBody) {
+        console.error("[addOrderItemRowWithData] 에러: order-items-table-body 요소를 찾을 수 없음!");
+        return;
+    }
+
+    const newRow = tableBody.insertRow();
+    const currentItemIndex = tableBody.rows.length;
+
+    newRow.insertCell(0).textContent = currentItemIndex; // No
+
+    const itemCell = newRow.insertCell(1); // 품목명
+    itemCell.textContent = item.itemName;
+    const itemIdInput = document.createElement('input');
+    itemIdInput.type = 'hidden';
+    itemIdInput.name = `orderItems[${currentItemIndex-1}][itemId]`; // 폼 제출 시 사용될 이름
+    itemIdInput.value = item.id;
+    itemCell.appendChild(itemIdInput);
+
+    newRow.insertCell(2).textContent = item.itemSpec || '-'; // 규격
+    newRow.insertCell(3).textContent = item.itemUnit; // 단위
+
+    const qtyCell = newRow.insertCell(4); // 수량
+    const qtyInput = document.createElement('input');
+    qtyInput.type = 'number';
+    qtyInput.name = `orderItems[${currentItemIndex-1}][quantity]`;
+    qtyInput.min = '1';
+    qtyInput.step = '1';
+    qtyInput.style.width = '90%';
+    qtyInput.required = true;
+    qtyInput.value = quantity; // 전달받은 수량 설정
+    qtyInput.oninput = () => calculateOrderRowTotal(newRow); // 행 금액 다시 계산
+    qtyCell.appendChild(qtyInput);
+
+    const priceCell = newRow.insertCell(5); // 단가
+    const priceInput = document.createElement('input');
+    priceInput.type = 'number';
+    priceInput.name = `orderItems[${currentItemIndex-1}][unitPrice]`;
+    priceInput.min = '0';
+    priceInput.step = 'any';
+    priceInput.style.width = '95%';
+    priceInput.required = true;
+    priceInput.value = unitPrice; // 전달받은 단가 설정
+    priceInput.oninput = () => calculateOrderRowTotal(newRow); // 행 금액 다시 계산
+    priceCell.appendChild(priceInput);
+
+    const amountCell = newRow.insertCell(6); // 금액
+    const amountSpan = document.createElement('span');
+    amountSpan.textContent = (quantity * unitPrice).toLocaleString(); // 초기 금액 계산 및 표시
+    amountCell.appendChild(amountSpan);
+
+    const actionCell = newRow.insertCell(7); // 관리(삭제)
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = '삭제';
+    deleteButton.type = 'button'; // 폼 제출 방지
+    deleteButton.classList.add('logout-button'); // 또는 다른 삭제 버튼 클래스
+    deleteButton.style.padding = '3px 8px';
+    deleteButton.onclick = () => deleteOrderItemRow(deleteButton); // 주문 품목 행 삭제 함수 호출
+    actionCell.appendChild(deleteButton);
+}
+
+/**
+ * 주문 품목 테이블의 특정 행 삭제 함수
+ * @param {HTMLButtonElement} buttonElement - 클릭된 삭제 버튼 요소
+ */
+function deleteOrderItemRow(buttonElement) {
+    const row = buttonElement.closest('tr');
+    if (row) {
+        row.remove();
+        calculateOrderTotal(); // 삭제 후 총액 다시 계산
+    }
+}
+
+/**
+ * 주문 품목 테이블의 특정 행 금액 계산 함수
+ * @param {HTMLTableRowElement} row - 계산할 행 요소
+ */
+function calculateOrderRowTotal(row) {
+    const qtyInput = row.cells[4].querySelector('input');
+    const priceInput = row.cells[5].querySelector('input');
+    const amountSpan = row.cells[6].querySelector('span');
+    const quantity = parseFloat(qtyInput.value) || 0;
+    const unitPrice = parseFloat(priceInput.value) || 0;
+    const amount = quantity * unitPrice;
+    amountSpan.textContent = amount.toLocaleString();
+    calculateOrderTotal(); // 행 금액 변경 시 전체 총액 다시 계산
+}
+
+/**
+ * 주문 전체 총액 계산 및 표시 함수
+ */
+function calculateOrderTotal() {
+    const tableBody = document.getElementById('order-items-table-body');
+    const rows = tableBody.querySelectorAll('tr');
+    let totalAmount = 0;
+    rows.forEach(row => {
+        const qtyInput = row.cells[4].querySelector('input');
+        const priceInput = row.cells[5].querySelector('input');
+        const quantity = parseFloat(qtyInput.value) || 0;
+        const unitPrice = parseFloat(priceInput.value) || 0;
+        totalAmount += quantity * unitPrice;
+    });
+    const totalAmountInput = document.getElementById('add-order-total-amount'); // 주문 총액 필드 ID
+    if (totalAmountInput) {
+        totalAmountInput.value = totalAmount.toLocaleString();
+    }
+}
+
 // <<< initializeApp 함수 정의 >>>
 function initializeApp() {
     console.log("[Init] initializeApp started");
