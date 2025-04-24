@@ -1,0 +1,676 @@
+// --- Basic Navigation & Modal Logic ---
+let isLoggedIn = false; // Default state, should be updated by actual login logic
+const headerLoggedIn = document.getElementById('header-logged-in');
+const headerLoggedOut = document.getElementById('header-logged-out');
+
+function updateHeader() {
+    if (isLoggedIn) {
+        headerLoggedIn.style.display = 'flex';
+        headerLoggedOut.style.display = 'none';
+    } else {
+        headerLoggedIn.style.display = 'none';
+        headerLoggedOut.style.display = 'flex';
+    }
+}
+
+// Sidebar Navigation Logic (수정됨)
+document.querySelectorAll('.sidebar nav a').forEach(link => {
+    link.addEventListener('click', function(event) { // 'this'를 사용하기 위해 화살표 함수 대신 일반 함수 사용
+        const href = this.getAttribute('href');
+        if (href && href.startsWith('#')) {
+            event.preventDefault(); // 기본 앵커 동작 방지
+            const targetId = href.substring(1);
+            const targetSection = document.getElementById(targetId + '-view');
+            const parentLi = this.closest('li'); // 클릭된 링크의 가장 가까운 li 요소
+            const isParentLink = parentLi && parentLi.querySelector('ul'); // 하위 메뉴(ul)가 있는지 여부로 부모 링크 판단
+
+            if (isParentLink) {
+                // --- 부모 메뉴 링크 클릭 시 (하위 메뉴 토글) ---
+                this.classList.toggle('active'); // 클릭된 부모 링크의 active 클래스 토글 (CSS에서 + ul 선택자로 하위 메뉴 표시/숨김 처리)
+                // 부모 메뉴 클릭 시에는 컨텐츠 영역을 바꾸거나 다른 링크를 비활성화하지 않습니다.
+            } else if (targetSection) {
+                // --- 하위 메뉴 또는 단일 메뉴 링크 클릭 시 (컨텐츠 표시 및 active 클래스 관리) ---
+
+                // 1. 모든 사이드바 링크에서 'active' 클래스 제거
+                document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+
+                // 2. 현재 클릭된 링크에 'active' 클래스 추가
+                this.classList.add('active');
+
+                // 3. 만약 클릭된 링크가 하위 메뉴의 링크라면, 해당하는 부모 메뉴 링크에도 'active' 클래스를 추가하여 펼쳐진 상태 유지 및 강조
+                const parentUl = this.closest('ul'); // 클릭된 링크가 속한 ul 찾기
+                if (parentUl && parentUl.previousElementSibling && parentUl.previousElementSibling.tagName === 'A') {
+                    parentUl.previousElementSibling.classList.add('active'); // 부모 <a> 태그에도 active 추가
+                }
+
+                // 4. 모든 컨텐츠 섹션 숨기기
+                document.querySelectorAll('.main-content section').forEach(section => {
+                    section.style.display = 'none';
+                });
+
+                // 5. 목표 컨텐츠 섹션 보여주기
+                targetSection.style.display = 'block';
+                console.log(`Displayed section: #${targetId}-view`); // 콘솔 로그 확인
+
+                // 6. 해당 섹션의 데이터 로딩 함수 호출 (기존 로직 유지)
+                if (targetId === 'user-mgmt') { renderUserList(users); }
+                else if (targetId === 'partner-mgmt') { renderPartnerList(partners); }
+                else if (targetId === 'company-mgmt') { displayCompanyInfo(); }
+                else if (targetId === 'item-mgmt') { renderItemList(items); }
+                else if (targetId === 'customer-mgmt') { renderCustomerList(customers); }
+                else if (targetId === 'equipment-mgmt') { searchEquipment(); }
+                else if (targetId === 'inspection-equip-mgmt') { searchInspectionEquipment(); }
+                else if (targetId === 'evaluation-form-mgmt') {
+                     console.log("Evaluation Form Management section selected. Loading data...");
+                     // renderEvaluationFormList(); // Function needs to be created
+                     console.log("renderEvaluationFormList() function needs to be called here.");
+                }
+                else if (targetId === 'dashboard-overview') {
+                    updateDashboardTodoList(); // 대시보드 섹션 로드 시 할 일 목록 업데이트
+                }
+                // ... (다른 섹션 로딩 로직) ...
+
+            } else {
+                // --- 링크에 해당하는 컨텐츠 섹션이 없는 경우 ---
+                console.warn(`No content section found for href: ${href}`);
+                document.querySelectorAll('.main-content section').forEach(section => {
+                    section.style.display = 'none';
+                });
+                // document.getElementById('dashboard-overview-view').style.display = 'block'; // 예: 대시보드 보여주기
+            }
+        }
+        // href 속성이 없거나 #으로 시작하지 않는 링크는 기본 동작을 따릅니다. (예: 외부 링크)
+    });
+});
+
+// Modal Open/Close Logic (수정됨)
+function openModal(modalId, dataToEdit = null) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        const form = modal.querySelector('form');
+        if (form) { form.reset(); }
+
+        // --- z-index 처리 시작 ---
+        if (modalId === 'bom-child-item-search-modal') {
+            modal.style.zIndex = 1001;
+            console.log(`Set z-index for ${modalId} to 1001`);
+        } else {
+            modal.style.zIndex = '';
+        }
+        // --- z-index 처리 끝 ---
+
+        // Edit Mode Population Logic
+        if (dataToEdit) {
+            console.log(`Opening modal ${modalId} in EDIT mode with data:`, dataToEdit);
+            if (modalId === 'add-workorder-modal') {
+                document.getElementById('workorder-modal-title').textContent = '작업 지시 수정';
+                document.getElementById('workorder-id').value = dataToEdit.id;
+                // ... rest of work order fields
+            } else if (modalId === 'add-user-modal') {
+                document.getElementById('add-user-modal').querySelector('h2').textContent = '인원 정보 수정';
+                document.getElementById('edit-user-id').value = dataToEdit.id;
+                document.getElementById('add-user-name').value = dataToEdit.userName;
+                document.getElementById('add-user-id').value = dataToEdit.userId;
+                document.getElementById('add-user-id').readOnly = true;
+                document.getElementById('add-user-password').required = false;
+                document.getElementById('add-user-confirm-password').required = false;
+                document.getElementById('add-user-dept').value = dataToEdit.department;
+                document.getElementById('add-user-role').value = dataToEdit.userRole;
+                document.getElementById('add-user-status').value = dataToEdit.userStatus;
+                document.getElementById('add-user-password').value = '';
+                document.getElementById('add-user-confirm-password').value = '';
+                document.getElementById('add-user-password').placeholder = '변경할 경우에만 입력';
+                document.getElementById('add-user-confirm-password').placeholder = '변경할 경우에만 입력';
+            } else if (modalId === 'add-partner-modal') {
+                document.getElementById('add-partner-modal').querySelector('h2').textContent = '거래처 정보 수정';
+                document.getElementById('edit-partner-id').value = dataToEdit.id;
+                document.getElementById('add-partner-name').value = dataToEdit.partnerName;
+                document.getElementById('add-partner-type').value = dataToEdit.partnerType;
+                document.getElementById('add-partner-biz-num').value = dataToEdit.businessRegNumber || '';
+                document.getElementById('add-partner-items').value = dataToEdit.mainItems || '';
+                document.getElementById('add-partner-address').value = dataToEdit.address || '';
+                document.getElementById('add-partner-contact-person').value = dataToEdit.contactPerson || '';
+                document.getElementById('add-partner-tel').value = dataToEdit.phoneNumber || '';
+                document.getElementById('add-partner-email').value = dataToEdit.email || '';
+                document.getElementById('add-partner-fax').value = dataToEdit.faxNumber || '';
+                document.getElementById('add-partner-notes').value = dataToEdit.notes || '';
+                document.getElementById('add-partner-reg-date').value = dataToEdit.registrationDate || '';
+                document.getElementById('add-partner-reg-date').readOnly = true;
+            }
+             else if (modalId === 'edit-company-modal') {
+                console.log(`Opening modal ${modalId} for editing company info`);
+                populateEditCompanyForm();
+            }
+             // ... other edit modals ...
+             else if (modalId === 'add-item-modal') { // Handle item edit
+                 document.getElementById('item-modal-title').textContent = '품목 정보 수정';
+                 document.getElementById('edit-item-id').value = dataToEdit.id;
+                 document.getElementById('add-item-type').value = dataToEdit.itemType;
+                 handleItemTypeChange(); // Ensure correct fields shown after setting type
+                 document.getElementById('add-item-code').value = dataToEdit.itemCode;
+                 document.getElementById('add-item-name').value = dataToEdit.itemName;
+                 document.getElementById('add-item-spec').value = dataToEdit.itemSpec || '';
+                 document.getElementById('add-item-unit').value = dataToEdit.itemUnit;
+                 document.getElementById('add-item-notes').value = dataToEdit.notes || '';
+                 document.getElementById('add-item-reg-date').value = dataToEdit.registrationDate || '';
+                 document.getElementById('add-item-reg-date').readOnly = true;
+
+                 if (dataToEdit.itemType === 'RawMaterial') {
+                     document.getElementById('add-item-purchase-price').value = dataToEdit.purchasePrice || '';
+                     document.getElementById('add-item-supplier').value = dataToEdit.supplierName || '';
+                     document.getElementById('add-item-supplier-id').value = dataToEdit.supplierId || '';
+                 } else if (dataToEdit.itemType === 'Product') {
+                     document.getElementById('add-item-selling-price').value = dataToEdit.sellingPrice || '';
+                 }
+                 // Handle SemiFinished etc. if needed
+             } else if (modalId === 'add-equipment-modal') { // Handle equipment edit
+                 document.getElementById('add-equipment-modal').querySelector('h2').textContent = '설비 정보 수정';
+                 document.getElementById('edit-equipment-id').value = dataToEdit.id;
+                 document.getElementById('add-equip-name').value = dataToEdit.itemName;
+                 document.getElementById('add-equip-model').value = dataToEdit.itemSpec || '';
+                 document.getElementById('add-equip-number').value = dataToEdit.itemCode;
+                 document.getElementById('add-equip-supplier').value = dataToEdit.supplierName || '';
+                 document.getElementById('add-equip-supplier-id').value = dataToEdit.supplierId || '';
+                 const powerMatch = dataToEdit.notes?.match(/전기사용량:\s*([\d.]+)\s*kW/);
+                 document.getElementById('add-equip-power').value = powerMatch ? powerMatch[1] : '';
+                 document.getElementById('add-equip-reg-date').value = dataToEdit.registrationDate || '';
+                 document.getElementById('add-equip-reg-date').readOnly = true;
+                 let notesWithoutPower = dataToEdit.notes?.replace(/전기사용량:\s*[\d.]+\s*kW\n?/, '').trim();
+                 document.getElementById('add-equip-notes').value = notesWithoutPower || '';
+             } else if (modalId === 'add-inspection-equip-modal') { // Handle inspection equipment edit
+                document.getElementById('add-inspection-equip-modal').querySelector('h2').textContent = '검사장비 정보 수정';
+                document.getElementById('edit-inspection-equip-id').value = dataToEdit.id;
+                document.getElementById('add-insp-equip-id').value = dataToEdit.itemCode; // 관리번호 (itemCode)
+                document.getElementById('add-insp-equip-name').value = dataToEdit.itemName;
+                document.getElementById('add-insp-equip-model').value = dataToEdit.itemSpec || '';
+                document.getElementById('add-insp-equip-manufacturer').value = dataToEdit.manufacturer || '';
+                document.getElementById('add-insp-equip-cycle').value = dataToEdit.calibrationCycle || '';
+                document.getElementById('add-insp-equip-last-cal').value = dataToEdit.lastCalibrationDate || '';
+                document.getElementById('add-insp-equip-reg-date').value = dataToEdit.registrationDate || '';
+                document.getElementById('add-insp-equip-reg-date').readOnly = true;
+                document.getElementById('add-insp-equip-status').value = dataToEdit.calibrationStatus || 'Normal';
+                document.getElementById('add-insp-equip-notes').value = dataToEdit.notes || '';
+             }
+            // ... other edit modals
+        } else {
+            // Reset titles for Add mode
+            console.log(`Opening modal ${modalId} in ADD mode`);
+            if (modalId === 'add-workorder-modal') {
+                document.getElementById('workorder-modal-title').textContent = '신규 작업 지시 추가';
+                document.getElementById('workorder-id').value = '';
+                // ... reset other fields
+            } else if (modalId === 'add-user-modal') {
+                document.getElementById('add-user-modal').querySelector('h2').textContent = '신규 인원 추가';
+                document.getElementById('edit-user-id').value = '';
+                document.getElementById('add-user-id').readOnly = false;
+                document.getElementById('add-user-password').required = true;
+                document.getElementById('add-user-confirm-password').required = true;
+                document.getElementById('add-user-password').placeholder = '';
+                document.getElementById('add-user-confirm-password').placeholder = '';
+            } else if (modalId === 'add-partner-modal') {
+                 document.getElementById('add-partner-modal').querySelector('h2').textContent = '신규 거래처 추가';
+                 document.getElementById('edit-partner-id').value = '';
+                 document.getElementById('add-partner-reg-date').readOnly = false;
+                 document.getElementById('add-partner-reg-date').value = new Date().toISOString().split('T')[0];
+            } else if (modalId === 'add-item-modal') {
+                document.getElementById('item-modal-title').textContent = '신규 품목 추가';
+                document.getElementById('edit-item-id').value = '';
+                document.getElementById('add-item-reg-date').readOnly = false;
+                document.getElementById('add-item-reg-date').value = new Date().toISOString().split('T')[0];
+                handleItemTypeChange(); // Reset fields based on default type
+            } else if (modalId === 'add-equipment-modal') {
+                document.getElementById('add-equipment-modal').querySelector('h2').textContent = '신규 설비 추가';
+                document.getElementById('edit-equipment-id').value = '';
+                document.getElementById('add-equip-reg-date').readOnly = false;
+                document.getElementById('add-equip-reg-date').value = new Date().toISOString().split('T')[0];
+            } else if (modalId === 'add-inspection-equip-modal') {
+                document.getElementById('add-inspection-equip-modal').querySelector('h2').textContent = '신규 검사장비 추가';
+                document.getElementById('edit-inspection-equip-id').value = '';
+                document.getElementById('add-insp-equip-reg-date').readOnly = false;
+                document.getElementById('add-insp-equip-reg-date').value = new Date().toISOString().split('T')[0];
+            }
+            // ... other add modals
+        }
+
+        modal.style.display = 'block';
+        console.log(`Opened modal: ${modalId}`);
+    } else {
+        console.error(`Modal with ID "${modalId}" not found!`);
+    }
+}
+
+// --- Item Modal Type Change Handler ---
+function handleItemTypeChange() {
+    const selectedType = document.getElementById('add-item-type').value;
+
+    const rawMaterialFields = document.getElementById('raw-material-fields');
+    const productFields = document.getElementById('product-fields');
+    const semifinishedFields = document.getElementById('semifinished-fields');
+
+    if(rawMaterialFields) rawMaterialFields.style.display = 'none';
+    if(productFields) productFields.style.display = 'none';
+    if(semifinishedFields) semifinishedFields.style.display = 'none';
+
+    if (selectedType === 'RawMaterial') {
+        if(rawMaterialFields) rawMaterialFields.style.display = 'block';
+    } else if (selectedType === 'Product') {
+        if(productFields) productFields.style.display = 'block';
+    } else if (selectedType === 'SemiFinished') {
+        if(semifinishedFields) semifinishedFields.style.display = 'block';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.zIndex = '';
+        console.log(`Closed modal: ${modalId}`);
+    }
+}
+window.addEventListener('click', function(event) {
+    if (event.target.classList.contains('modal')) { closeModal(event.target.id); }
+});
+
+// --- Form Submission Handlers ---
+document.getElementById('signup-form')?.addEventListener('submit', function(event) {
+    event.preventDefault();
+    if (document.getElementById('signup-password').value !== document.getElementById('signup-confirm-password').value) { alert('비밀번호 불일치'); return; }
+    console.log('회원가입 폼 제출:', Object.fromEntries(new FormData(this))); alert('회원가입 요청 (서버 연동 필요)'); closeModal('signup-modal');
+});
+document.getElementById('add-item-form')?.addEventListener('submit', function(event) { /* Updated below */ });
+document.getElementById('add-workorder-form')?.addEventListener('submit', function(event) {
+    event.preventDefault(); const id = document.getElementById('workorder-id').value;
+    if (id) { console.log('작업 지시 수정:', Object.fromEntries(new FormData(this))); alert('작업 지시 수정 (서버 연동 필요)'); }
+    else { console.log('작업 지시 추가:', Object.fromEntries(new FormData(this))); alert('작업 지시 추가 (서버 연동 필요)'); }
+    closeModal('add-workorder-modal'); /* Refresh work order list */
+});
+document.getElementById('edit-company-form')?.addEventListener('submit', function(event) { /* Updated below */ });
+document.getElementById('add-user-form')?.addEventListener('submit', function(event) { /* Updated below */ });
+document.getElementById('add-partner-form')?.addEventListener('submit', function(event) { /* Updated below */ });
+document.getElementById('add-equipment-form')?.addEventListener('submit', function(event) { /* Updated below */ });
+document.getElementById('add-inspection-equip-form')?.addEventListener('submit', function(event) { /* Updated below */ });
+document.getElementById('add-customer-form')?.addEventListener('submit', function(event) { /* Updated below */ });
+
+
+// Edit Company Form Submit Handler
+const editCompanyForm = document.getElementById('edit-company-form');
+if (editCompanyForm) {
+    editCompanyForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        console.log('기업 정보 수정 폼 제출됨:');
+
+        companyData.companyName = formData.get('companyName');
+        companyData.businessRegistrationNumber = formData.get('businessRegistrationNumber');
+        companyData.address = formData.get('address');
+        companyData.ceoName = formData.get('ceoName');
+        companyData.mainProducts = formData.get('mainProducts');
+        companyData.phoneNumber = formData.get('phoneNumber');
+        companyData.faxNumber = formData.get('faxNumber');
+
+        const sealImageFile = formData.get('sealImage');
+        let imageUpdated = false;
+
+        if (sealImageFile && sealImageFile.size > 0) {
+            console.log('새 도장 이미지 파일 선택됨:', sealImageFile.name);
+            imageUpdated = true;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                companyData.sealImageUrl = e.target.result;
+                displayCompanyInfo();
+                alert('기업 정보가 수정되었습니다. (도장 이미지는 임시 표시)');
+            }
+            reader.readAsDataURL(sealImageFile);
+        }
+
+        closeModal('edit-company-modal');
+
+        if (!imageUpdated) {
+            displayCompanyInfo();
+            alert('기업 정보가 수정되었습니다.');
+        }
+    });
+} else {
+    console.error("Edit company form not found!");
+}
+
+// --- Item Management Data and Functions ---
+let items = [ /* ... Original item data ... */ ];
+let nextItemId = 104;
+
+function renderItemList(itemList) { /* ... Original function ... */ }
+
+// 품목 추가/수정 폼 제출 핸들러 (이미지 처리 포함 최종 버전)
+const addItemForm = document.getElementById('add-item-form');
+if (addItemForm) {
+    addItemForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const itemIdToEdit = formData.get('itemIdToEdit');
+        const itemType = formData.get('itemType');
+
+        const itemData = {
+            itemType: itemType,
+            itemCode: formData.get('itemCode'),
+            itemName: formData.get('itemName'),
+            itemSpec: formData.get('itemSpec'),
+            itemUnit: formData.get('itemUnit'),
+            notes: formData.get('notes'),
+            // Type specific fields
+            ...(itemType === 'RawMaterial' && {
+                purchasePrice: parseFloat(formData.get('purchasePrice')) || null,
+                supplierName: formData.get('supplierName'),
+                supplierId: formData.get('supplierId') || null
+            }),
+            ...(itemType === 'Product' && {
+                sellingPrice: parseFloat(formData.get('sellingPrice')) || null
+            }),
+            // Add SemiFinished etc. if needed
+        };
+
+        const itemImageFile = formData.get('itemImage');
+        const saveDataAndUpdateUI = (finalItemData) => {
+            if (itemIdToEdit) {
+                finalItemData.id = parseInt(itemIdToEdit);
+                console.log('Updating Item:', finalItemData);
+                const index = items.findIndex(i => i.id === finalItemData.id);
+                if (index !== -1) {
+                    finalItemData.registrationDate = items[index].registrationDate;
+                    finalItemData.imageUrl = finalItemData.imageUrl !== undefined ? finalItemData.imageUrl : items[index].imageUrl;
+                    items[index] = { ...items[index], ...finalItemData };
+                    alert(`${finalItemData.itemName} 품목 정보가 수정되었습니다.`);
+                } else { alert('품목 수정 중 오류 발생'); }
+            } else {
+                finalItemData.id = nextItemId++;
+                finalItemData.registrationDate = formData.get('registrationDate') || new Date().toISOString().split('T')[0];
+                finalItemData.imageUrl = finalItemData.imageUrl !== undefined ? finalItemData.imageUrl : null;
+                console.log('Adding New Item:', finalItemData);
+                items.push(finalItemData);
+                alert(`${finalItemData.itemName} 품목이 추가되었습니다.`);
+            }
+            closeModal('add-item-modal');
+            renderItemList(items);
+        };
+
+        if (itemImageFile && itemImageFile.size > 0) {
+            console.log('새 이미지 파일 처리:', itemImageFile.name);
+            const reader = new FileReader();
+            reader.onload = function(e) { itemData.imageUrl = e.target.result; saveDataAndUpdateUI(itemData); }
+            reader.onerror = function() { console.error("이미지 파일을 읽는 중 오류 발생"); alert("이미지 파일을 처리하는 중 오류가 발생했습니다."); itemData.imageUrl = itemIdToEdit ? items.find(i=>i.id===parseInt(itemIdToEdit))?.imageUrl : null; saveDataAndUpdateUI(itemData); }
+            reader.readAsDataURL(itemImageFile);
+        } else {
+             itemData.imageUrl = itemIdToEdit ? items.find(i=>i.id===parseInt(itemIdToEdit))?.imageUrl : null;
+             saveDataAndUpdateUI(itemData);
+        }
+    });
+} else {
+    console.error("Add item form not found!");
+}
+
+function viewItemDetails(itemId) { /* ... Original function ... */ }
+function editItem(itemId) { /* ... Original function ... */ }
+function deleteItem(itemId) { /* ... Original function ... */ }
+
+// --- Equipment Management Functions ---
+function renderEquipmentList(equipmentList) { /* ... Original function ... */ }
+function searchEquipment() { /* ... Original function ... */ }
+function viewEquipmentDetails(id) { /* ... Original function ... */ }
+function editEquipment(id) { /* ... Original function ... */ }
+function deleteEquipment(id) { /* ... Original function ... */ }
+
+// Equipment Form Submit Handler
+const addEquipmentForm = document.getElementById('add-equipment-form');
+if (addEquipmentForm) {
+    addEquipmentForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const itemIdToEdit = formData.get('itemIdToEdit');
+        const power = formData.get('powerConsumption');
+
+        const equipData = {
+            itemType: 'Equipment',
+            itemCode: formData.get('itemCode'),
+            itemName: formData.get('itemName'),
+            itemSpec: formData.get('itemSpec'),
+            itemUnit: '대',
+            supplierName: formData.get('supplierName'),
+            supplierId: formData.get('supplierId') || null,
+            notes: formData.get('notes'),
+            registrationDate: formData.get('registrationDate') || new Date().toISOString().split('T')[0],
+            imageUrl: null
+        };
+
+         if (power) {
+            equipData.notes = `전기사용량: ${power}kW` + (equipData.notes ? `\n${equipData.notes}` : '');
+         }
+
+        const itemImageFile = formData.get('itemImage');
+        const saveDataAndUpdateUI = (finalEquipData) => {
+            if (itemIdToEdit) {
+                finalEquipData.id = parseInt(itemIdToEdit);
+                const index = items.findIndex(i => i.id === finalEquipData.id);
+                if (index !== -1) {
+                    finalEquipData.registrationDate = items[index].registrationDate;
+                    finalEquipData.imageUrl = finalEquipData.imageUrl !== undefined ? finalEquipData.imageUrl : items[index].imageUrl;
+                    items[index] = { ...items[index], ...finalEquipData };
+                    alert('설비 정보가 수정되었습니다.');
+                } else { alert('설비 수정 중 오류 발생'); }
+            } else {
+                finalEquipData.id = nextItemId++;
+                finalEquipData.imageUrl = finalEquipData.imageUrl !== undefined ? finalEquipData.imageUrl : null;
+                items.push(finalEquipData);
+                alert('설비가 추가되었습니다.');
+            }
+            closeModal('add-equipment-modal');
+            searchEquipment(); // Refresh list using search function
+        };
+
+        if (itemImageFile && itemImageFile.size > 0) {
+            const reader = new FileReader();
+            reader.onload = function(e) { equipData.imageUrl = e.target.result; saveDataAndUpdateUI(equipData); }
+            reader.onerror = function() { console.error("Image read error"); equipData.imageUrl = itemIdToEdit ? items.find(i=>i.id===parseInt(itemIdToEdit))?.imageUrl : null; saveDataAndUpdateUI(equipData); }
+            reader.readAsDataURL(itemImageFile);
+        } else {
+            equipData.imageUrl = itemIdToEdit ? items.find(i=>i.id===parseInt(itemIdToEdit))?.imageUrl : null;
+            saveDataAndUpdateUI(equipData);
+        }
+    });
+}
+
+// --- Inspection Equipment Management Functions ---
+function renderInspectionEquipmentList(inspectionEquipList) { /* ... Original function ... */ }
+function searchInspectionEquipment() { /* ... Original function ... */ }
+function viewInspectionEquipmentDetails(id) { /* ... Original function ... */ }
+function editInspectionEquipment(id) { /* ... Original function ... */ }
+function deleteInspectionEquipment(id) { /* ... Original function ... */ }
+
+// Inspection Equipment Form Submit Handler
+const addInspectionEquipForm = document.getElementById('add-inspection-equip-form');
+if (addInspectionEquipForm) {
+    addInspectionEquipForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const itemIdToEdit = formData.get('itemIdToEdit');
+
+        const inspEquipData = {
+            itemType: 'InspectionEquipment',
+            itemCode: formData.get('itemCode'), // 관리번호
+            itemName: formData.get('itemName'),
+            itemSpec: formData.get('itemSpec'),
+            itemUnit: '개', // Default or make it a field
+            notes: formData.get('notes'),
+            imageUrl: null,
+            manufacturer: formData.get('manufacturer'),
+            calibrationCycle: formData.get('calibrationCycle'),
+            lastCalibrationDate: formData.get('lastCalibrationDate'),
+            calibrationStatus: formData.get('calibrationStatus'),
+            registrationDate: formData.get('registrationDate') || new Date().toISOString().split('T')[0]
+        };
+
+        const itemImageFile = formData.get('itemImage');
+        const saveDataAndUpdateUI = (finalInspEquipData) => {
+            if (itemIdToEdit) {
+                 finalInspEquipData.id = parseInt(itemIdToEdit);
+                 const index = items.findIndex(i => i.id === finalInspEquipData.id);
+                 if (index !== -1) {
+                     finalInspEquipData.registrationDate = items[index].registrationDate;
+                     finalInspEquipData.imageUrl = finalInspEquipData.imageUrl !== undefined ? finalInspEquipData.imageUrl : items[index].imageUrl;
+                     items[index] = { ...items[index], ...finalInspEquipData };
+                     alert('검사장비 정보가 수정되었습니다.');
+                 } else { alert('검사장비 수정 중 오류 발생'); }
+            } else {
+                 finalInspEquipData.id = nextItemId++; // Use shared item ID counter
+                 finalInspEquipData.imageUrl = finalInspEquipData.imageUrl !== undefined ? finalInspEquipData.imageUrl : null;
+                 items.push(finalInspEquipData);
+                 alert('검사장비가 추가되었습니다.');
+            }
+            closeModal('add-inspection-equip-modal');
+            searchInspectionEquipment(); // Refresh list
+        };
+
+        if (itemImageFile && itemImageFile.size > 0) {
+            const reader = new FileReader();
+            reader.onload = function(e) { inspEquipData.imageUrl = e.target.result; saveDataAndUpdateUI(inspEquipData); }
+            reader.onerror = function() { console.error("Image read error"); inspEquipData.imageUrl = itemIdToEdit ? items.find(i=>i.id===parseInt(itemIdToEdit))?.imageUrl : null; saveDataAndUpdateUI(inspEquipData); }
+            reader.readAsDataURL(itemImageFile);
+        } else {
+             inspEquipData.imageUrl = itemIdToEdit ? items.find(i=>i.id===parseInt(itemIdToEdit))?.imageUrl : null;
+             saveDataAndUpdateUI(inspEquipData);
+        }
+    });
+}
+
+
+// --- BOM Management Data and Functions ---
+let bomData = { /* ... Original BOM data ... */ };
+let bomNextRowIndex = 1;
+let targetBomRowForSearch = null; // Declare this variable
+
+function openBomModal(parentItemId) { /* ... Original function ... */ }
+function addBomItemRow(bomItem = null) { /* ... Original function ... */ }
+function searchBomChildItems() { /* ... Original function ... */ }
+function selectBomChildItem(selectedItemId) { /* ... Original function ... */ }
+function searchChildItemForRow(rowElement) { /* ... Original function ... */ }
+function saveBom() { /* ... Original function ... */ }
+function deleteBomItemRow(buttonElement) { /* ... Original function ... */ }
+function registerBom(id) { openBomModal(id); }
+
+
+// --- Placeholder functions for other table actions ---
+function searchWorkOrders() { alert('검색 기능 구현 필요'); }
+function viewWorkOrder(workOrderId) { alert(`View Work Order ${workOrderId} details needed`); }
+function editWorkOrder(workOrderId) { alert(`Edit Work Order ${workOrderId} needed`); }
+function deleteWorkOrder(workOrderId) { if(confirm(`Delete WO ${workOrderId}?`)) alert('WO Delete needed'); }
+function getWorkOrderDetailsFromServer(workOrderId) { return null; /* Placeholder */ }
+function searchQuotes() { alert('견적 검색 기능 구현 필요'); }
+function viewQuoteDetails(quoteId) { alert(`View Quote ${quoteId} details needed`); }
+function editQuote(quoteId) { alert(`Edit Quote ${quoteId} needed`); }
+function deleteQuote(quoteId) { if(confirm(`Delete Quote ${quoteId}?`)) alert('Quote Delete needed'); }
+function printQuote() { alert('견적서 인쇄 기능 구현 필요'); }
+function searchOrders() { alert('주문 검색 기능 구현 필요'); }
+function viewOrderDetails(orderId) { alert(`View Order ${orderId} details needed`); }
+function editOrder(orderId) { alert(`Edit Order ${orderId} needed`); }
+function cancelOrder(orderId) { if(confirm(`Cancel Order ${orderId}?`)) alert('Order Cancel needed'); }
+function printOrder() { alert('주문서 인쇄 기능 구현 필요'); }
+function searchSuppliers() { alert('공급처 검색 기능 구현 필요'); }
+function viewSupplierDetails(supplierId) { alert(`View Supplier ${supplierId} details needed`); }
+function openEvaluateSupplierModal(supplierId) { alert(`Evaluate Supplier ${supplierId} modal needed`); }
+function goToPartnerManagement() { /* ... Original function ... */ }
+function searchEvaluationForms() { alert('평가 양식 검색 기능 구현 필요'); }
+function openManageCriteriaModal(formId) { alert(`Manage Criteria for Form ${formId} needed`); }
+function editEvaluationForm(formId) { alert(`Edit Evaluation Form ${formId} needed`); }
+function deleteEvaluationForm(formId) { if(confirm(`Delete Form ${formId}?`)) alert('Eval Form Delete needed'); }
+function addEvaluationCategoryRow() { alert('Add Category Row needed'); }
+function saveEvaluationCriteria() { alert('Save Criteria needed'); }
+
+
+// --- Document Modal Specific Logic ---
+function showDirectWriteView() { alert('Show Direct Write View needed'); }
+function showImportTemplateView() { alert('Show Import Template View needed'); }
+function resetAndShowChoice(modalId) { alert('Reset and Show Choice needed'); }
+function loadTemplateOptions(docType) { alert('Load Template Options needed'); }
+function loadTemplate() { alert('Load Template needed'); }
+function toggleRelevantDepartments(prefix) { alert('Toggle Relevant Depts needed'); }
+
+
+// --- Dashboard Specific Functions ---
+function openTask(taskId) { alert(`Open Task ${taskId} details needed`); }
+function createDocumentFromFavorite(templateId) { alert(`Create document from template ${templateId} needed`); }
+function navigateToSection(targetId, params = {}) {
+    console.log(`Navigating to section: ${targetId} with params:`, params);
+    const link = document.querySelector(`.sidebar nav a[href="#${targetId}"]`);
+    if (link) {
+        link.click();
+        // Apply parameters if needed (e.g., set filter values and trigger search)
+        // This part requires specific implementation based on section and params
+        if (targetId === 'order-mgmt' && params.date === 'today') {
+            // Example: set date filter to today and search
+            alert("Filtering orders for today - implementation needed");
+        } else if (targetId === 'order-mgmt' && params.status === 'pending_shipment') {
+             alert("Filtering orders for pending shipment - implementation needed");
+        }
+         else if (targetId === 'inventory-receipt' && params.date === 'today') {
+             alert("Filtering receipts for today - implementation needed");
+        }
+         else if (targetId === 'inventory-issue' && params.date === 'today') {
+             alert("Filtering shipments for today - implementation needed");
+        }
+         else if (targetId === 'records' && params.status) {
+             alert(`Filtering records for status ${params.status} - implementation needed`);
+         }
+         else if (targetId === 'forms') {
+             alert("Navigating to all forms - implementation needed");
+         }
+    } else {
+        console.error(`Could not find link for section #${targetId}`);
+    }
+}
+
+
+// --- User Management Data and Functions ---
+let users = [ /* ... Original user data ... */ ];
+let nextUserId = 4;
+function renderUserList(userList) { /* ... Original function ... */ }
+const addUserForm = document.getElementById('add-user-form');
+if (addUserForm) { /* ... Original event listener ... */ }
+function searchUsers() { /* ... Original function ... */ }
+function editUser(userId) { /* ... Original function ... */ }
+function deleteUser(userId) { /* ... Original function ... */ }
+function viewUserDetails(id) { alert(`User ${id} details view needed.`); }
+
+// --- Partner Management Data and Functions ---
+let partners = [ /* ... Original partner data ... */ ];
+let nextPartnerId = 4;
+function renderPartnerList(partnerList) { /* ... Original function ... */ }
+const addPartnerForm = document.getElementById('add-partner-form');
+if (addPartnerForm) { /* ... Original event listener ... */ }
+function viewPartnerDetails(partnerId) { /* ... Original function ... */ }
+function editPartner(partnerId) { /* ... Original function ... */ }
+function deletePartner(partnerId) { /* ... Original function ... */ }
+
+// --- Customer Management Data and Functions ---
+let customers = [ /* ... Original customer data ... */ ];
+let nextCustomerId = 4;
+function renderCustomerList(customerList) { /* ... Original function ... */ }
+function searchCustomers() { /* ... Original function ... */ }
+function viewCustomerDetails(customerId) { alert(`View Customer ${customerId} details needed`); }
+function editCustomer(customerId) { alert(`Edit Customer ${customerId} needed`); }
+function deleteCustomer(customerId) { if(confirm(`Delete Customer ${customerId}?`)) alert('Customer Delete needed'); }
+const addCustomerForm = document.getElementById('add-customer-form');
+if (addCustomerForm) { /* ... Original event listener ... */ }
+
+
+// --- Company Management Data and Functions ---
+let companyData = { /* ... Original company data ... */ };
+function displayCompanyInfo() { /* ... Original function ... */ }
+function populateEditCompanyForm() { /* ... Original function ... */ }
+
+
+// --- Helper and Init Functions ---
+function calculateNextCalibrationDate(lastCalDateStr, cycleStr) { /* ... Original function ... */ }
+function updateDashboardTodoList() { /* ... Original function ... */ }
+function getCurrentUserId() { /* ... Original function ... */ }
+function getCurrentUserDepartment() { /* ... Original function ... */ }
+function initializeApp() { /* ... Original function ... */ }
+document.addEventListener('DOMContentLoaded', initializeApp);
