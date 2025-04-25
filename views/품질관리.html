@@ -1,0 +1,61 @@
+<section id="inspection-standard-view">
+    <h2><span class="icon">✅</span> 검사기준서 관리</h2>
+    <p>(검사기준서 목록 및 관리 기능 구현 영역)</p>
+</section>
+
+<section id="incoming-inspection-view">
+    <h2><span class="icon">✅</span> 수입검사 관리</h2>
+    <p>(수입검사 결과 등록 및 조회 기능 구현 영역)</p>
+</section>
+
+<section id="inprocess-inspection-view">
+    <h2><span class="icon">✅</span> 공정검사 관리</h2>
+    <p>(공정검사 결과 등록 및 조회 기능 구현 영역)</p>
+</section>
+
+<section id="outgoing-inspection-view">
+    <h2><span class="icon">✅</span> 출하검사 관리</h2>
+    <p>(출하검사 결과 등록 및 조회 기능 구현 영역)</p>
+</section>
+
+<section id="inspection-equip-mgmt-view">
+    <h2><span class="icon">✅</span> 검사장비 관리</h2>
+    <div class="filter-area">
+        <input type="text" id="insp-equip-search-input" placeholder="검사장비명/관리번호 검색..." style="width: 220px;">
+        <select id="insp-equip-status-filter" title="교정 상태 필터" style="width: 130px;">
+            <option value="">모든 상태</option>
+            <option value="Normal">정상</option>
+            <option value="Scheduled">교정 예정</option>
+            <option value="Delayed">교정 지연</option>
+            <option value="Excluded">교정 제외</option>
+            <option value="Repair">수리중</option>
+        </select>
+        <button onclick="searchInspectionEquipment()">검색</button>
+        <button class="add-new" onclick="openModal('add-inspection-equip-modal')">+ 검사장비 추가</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>관리번호</th>
+                <th>검사장비명</th>
+                <th>모델명/규격</th>
+                <th>제조사</th>
+                <th>이미지</th>
+                <th>교정주기</th>
+                <th>최종교정일</th>
+                <th>차기교정예정일</th>
+                <th>등록일</th>
+                <th>교정 상태</th>
+                <th>관리</th>
+            </tr>
+        </thead>
+        <tbody id="inspection-equipment-table-body"></tbody>
+    </table>
+    <div class="pagination" id="inspection-equipment-pagination"></div>
+</section>
+
+<section id="nonconformity-mgmt-view">
+    <h2><span class="icon">✅</span> 부적합 관리</h2>
+    <p>(부적합 보고 및 처리 관리 기능 구현 영역)</p>
+</section>

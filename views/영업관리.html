@@ -1,0 +1,113 @@
+<section id="customer-mgmt-view" style="display: none;">
+    <h2><span class="icon">💼</span> 고객 관리</h2>
+    <div class="filter-area">
+        <input type="text" id="customer-search-input" placeholder="고객명/사업자번호 검색..." style="width: 250px;">
+        <select id="customer-status-filter" title="상태 필터">
+            <option value="">모든 상태</option>
+            <option value="Active">활성</option>
+            <option value="Inactive">비활성</option>
+            <option value="Potential">잠재</option>
+        </select>
+        <button onclick="searchCustomers()">검색</button>
+        <button class="add-new" onclick="openModal('add-customer-modal')">+ 신규 고객 추가</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>고객명</th>
+                <th>사업자번호</th>
+                <th>대표자</th>
+                <th>연락처</th>
+                <th>담당자(자사)</th>
+                <th>상태</th>
+                <th>등록일</th>
+                <th>관리</th>
+            </tr>
+        </thead>
+        <tbody id="customer-table-body"></tbody>
+    </table>
+    <div class="pagination" id="customer-pagination">
+        <button>&laquo;</button><button class="active">1</button><button>&raquo;</button>
+    </div>
+</section>
+
+<section id="quote-mgmt-view" style="display: none;">
+    <h2><span class="icon">💼</span> 견적 관리</h2>
+    <div class="filter-area">
+        <input type="text" id="quote-search-input" placeholder="견적번호/고객사명 검색..." style="width: 220px;">
+        <select id="quote-status-filter" title="견적 상태 필터">
+            <option value="">모든 상태</option>
+            <option value="Draft">작성중</option>
+            <option value="Sent">전송됨</option>
+            <option value="Approved">승인됨</option>
+            <option value="Rejected">반려됨</option>
+            <option value="Expired">만료됨</option>
+        </select>
+        <input type="date" id="quote-start-date-filter" title="견적일 시작"> ~
+        <input type="date" id="quote-end-date-filter" title="견적일 종료">
+        <button onclick="searchQuotes()">검색</button>
+        <button class="add-new" onclick="openModal('add-quote-modal')">+ 신규 견적 추가</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>견적번호</th>
+                <th>고객사명</th>
+                <th>견적일자</th>
+                <th>유효기간</th>
+                <th>총액</th>
+                <th>상태</th>
+                <th>작성자</th>
+                <th>관리</th>
+            </tr>
+        </thead>
+        <tbody id="quote-table-body">
+        </tbody>
+    </table>
+    <div class="pagination" id="quote-pagination">
+        <button>&laquo;</button><button class="active">1</button><button>2</button><button>&raquo;</button>
+    </div>
+</section>
+
+<section id="order-mgmt-view" style="display: none;">
+    <h2><span class="icon">💼</span> 주문 관리 (수주)</h2>
+    <div class="filter-area">
+        <input type="text" id="order-search-input" placeholder="주문번호/고객사명 검색..." style="width: 220px;">
+        <select id="order-status-filter" title="주문 상태 필터">
+            <option value="">모든 상태</option>
+            <option value="Pending">접수 대기</option>
+            <option value="Confirmed">접수 확인</option>
+            <option value="Processing">생산/출고 준비중</option>
+            <option value="Shipped">출고 완료</option>
+            <option value="Delivered">납품 완료</option>
+            <option value="Canceled">주문 취소</option>
+        </select>
+        <input type="date" id="order-start-date-filter" title="주문일 시작"> ~
+        <input type="date" id="order-end-date-filter" title="주문일 종료">
+        <button onclick="searchOrders()">검색</button>
+        <button class="add-new" onclick="openModal('add-order-modal')">+ 신규 주문 추가</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>주문번호</th>
+                <th>고객사명</th>
+                <th>주문일자</th>
+                <th>납기요청일</th>
+                <th>총액</th>
+                <th>상태</th>
+                <th>담당자(자사)</th>
+                <th>관리</th>
+            </tr>
+        </thead>
+        <tbody id="order-table-body">
+            </tbody>
+    </table>
+    <div class="pagination" id="order-pagination">
+        <button>&laquo;</button><button class="active">1</button><button>&raquo;</button>
+    </div>
+    </section>

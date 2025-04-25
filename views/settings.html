@@ -1,0 +1,92 @@
+<section id="company-mgmt-view"> <h2><span class="icon">⚙️</span> 기업 관리</h2>
+    <p>등록된 기업 정보 표시 및 수정 기능 영역입니다.</p>
+
+    <div class="info-display-box">
+        <h3>등록된 기업 정보</h3>
+        <div class="company-info-details"> <p><strong class="info-label">기업명:</strong> <span id="display-company-name">[로딩...]</span></p>
+            <p><strong class="info-label">사업자등록번호:</strong> <span id="display-biz-reg-num">[로딩...]</span></p>
+            <p><strong class="info-label">주소:</strong> <span id="display-address">[로딩...]</span></p>
+            <p><strong class="info-label">대표자:</strong> <span id="display-ceo">[로딩...]</span></p>
+            <p><strong class="info-label">주 생산품:</strong> <span id="display-main-product">[로딩...]</span></p>
+            <p><strong class="info-label">연락처:</strong> <span id="display-tel">[로딩...]</span></p>
+            <p><strong class="info-label">FAX:</strong> <span id="display-fax">[로딩...]</span></p>
+            <div class="info-image-row">
+                 <strong class="info-label">도장 이미지:</strong>
+                 <img id="display-seal-image" src="#" alt="[이미지 로딩...]" class="seal-image" style="margin-left: 5px;"> </div>
+        </div>
+    </div>
+
+    <div style="text-align: right; margin-top: 20px;">
+        <button class="action-button" onclick="openModal('edit-company-modal', companyData)">정보 수정하기</button>
+    </div>
+</section>
+
+<section id="user-mgmt-view" style="display: none;">
+    <h2><span class="icon">⚙️</span> 인원 관리</h2>
+    <div class="filter-area">
+        <input type="text" id="user-search-input" placeholder="이름/아이디 검색...">
+        <select id="user-status-filter" title="상태 필터">
+            <option value="">모든 상태</option>
+            <option value="Active">승인</option>
+            <option value="Pending">대기</option>
+            <option value="Inactive">퇴사</option>
+        </select>
+        <button onclick="searchUsers()">검색</button> <button class="add-new" onclick="openModal('add-user-modal')">+ 인원 추가</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th><th>성명</th><th>아이디</th><th>부서</th><th>등급</th><th>상태</th><th>등록일자</th><th>최종로그인</th><th>관리</th>
+            </tr>
+        </thead>
+        <tbody id="user-table-body">
+            </tbody>
+    </table>
+    <div class="pagination"> <button>&laquo;</button> <button class="active">1</button> <button>&raquo;</button></div> </section>
+
+<section id="partner-mgmt-view" style="display: none;">
+    <h2><span class="icon">⚙️</span> 거래처 관리</h2>
+    <div class="filter-area">
+        <input type="text" id="partner-search-input" placeholder="거래업체명/담당자명 검색..." style="width: 250px;">
+        <select id="partner-type-filter" title="거래 구분 필터" style="width: 120px;">
+            <option value="">전체 구분</option>
+            <option value="Supplier">공급사</option>
+            <option value="Customer">고객사</option>
+            <option value="Subcontractor">외주업체</option>
+            <option value="Etc">기타</option>
+        </select>
+        <button onclick="searchPartners()">검색</button> <button class="add-new" onclick="openModal('add-partner-modal')">+ 거래업체 추가</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th><th>거래 구분</th><th>거래업체명</th><th>사업자번호</th><th>주요 품목</th><th>담당자</th><th>연락처</th><th>이메일</th><th>등록일</th><th>관리</th>
+            </tr>
+        </thead>
+        <tbody id="partner-table-body">
+             </tbody>
+    </table>
+    <div class="pagination"> <button>&laquo;</button> <button class="active">1</button> <button>&raquo;</button> </div> </section>
+
+<section id="item-mgmt-view" style="display: none;">
+    <h2><span class="icon">⚙️</span> 품목 관리</h2>
+    <div class="filter-area">
+        <input type="text" id="item-search-input" placeholder="품목명/코드 검색..." style="width: 200px;">
+        <select id="item-type-filter" title="품목 구분 필터" style="width: 150px;">
+            <option value="">모든 구분</option>
+            <option value="Product">제품</option>
+            <option value="SemiFinished">반제품</option>
+            <option value="RawMaterial">원자재</option>
+        </select>
+        <button onclick="searchItems()">검색</button> <button class="add-new" onclick="openModal('add-item-modal')">+ 품목 추가</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th><th>이미지</th><th>구분</th><th>품목 코드</th><th>품목명</th><th>규격</th><th>단위</th><th>관리</th>
+            </tr>
+        </thead>
+        <tbody id="item-table-body">
+             </tbody>
+    </table>
+    <div class="pagination"> <button>&laquo;</button> <button class="active">1</button> <button>&raquo;</button> </div> </section>

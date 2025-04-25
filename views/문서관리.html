@@ -1,0 +1,38 @@
+<section id="manuals-view">
+    <h2><span class="icon">📄</span> 매뉴얼 관리</h2>
+    <div class="filter-area"><input type="text" placeholder="제목/번호 검색..."><button>검색</button><button class="add-new" onclick="openModal('add-document-modal', '매뉴얼')">+ 신규 매뉴얼 추가</button></div>
+    <table>
+        <thead>
+            <tr><th>문서번호</th><th>제목</th><th>버전</th><th>개정일자</th><th>작성자</th><th>즐겨찾기</th><th>작업</th></tr>
+        </thead>
+        <tbody id="manuals-table-body">
+            <tr><td>PM-01</td><td>품질경영 매뉴얼</td><td>5.0</td><td>2025-03-10</td><td>홍길동</td><td class="favorite-toggle">★</td><td><button class="view-button">보기</button></td></tr>
+        </tbody>
+    </table>
+</section>
+
+<section id="procedures-view">
+    <h2><span class="icon">📄</span> 절차서 관리</h2>
+    <div class="filter-area"><input type="text" placeholder="제목/번호 검색..."><button>검색</button><button class="add-new" onclick="openModal('add-document-modal', '절차서')">+ 신규 절차서 추가</button></div>
+    <table>
+        <thead>
+            <tr><th>문서번호</th><th>제목</th><th>버전</th><th>개정일자</th><th>작성자</th><th>즐겨찾기</th><th>작업</th></tr>
+        </thead>
+        <tbody id="procedures-table-body">
+            <tr><td>QP-001</td><td>문서 관리 절차서</td><td>4.0</td><td>2025-02-20</td><td>홍길동</td><td class="favorite-toggle">★</td><td><button class="view-button">보기</button></td></tr>
+        </tbody>
+    </table>
+</section>
+
+<section id="forms-view">
+    <h2><span class="icon">📄</span> 기록 양식 관리</h2>
+    <div class="filter-area"><input type="text" placeholder="제목/번호 검색..."><button>검색</button><button class="add-new" onclick="openModal('add-document-modal', '기록 양식')">+ 신규 기록 양식 추가</button></div>
+    <table>
+        <thead>
+            <tr><th>문서번호</th><th>제목</th><th>버전</th><th>개정일자</th><th>상태</th><th>즐겨찾기</th><th>작업</th></tr>
+        </thead>
+        <tbody id="forms-table-body">
+            <tr><td>QF-INS-001B</td><td>출하검사성적서 (제품 B)</td><td>1.0</td><td>2025-04-01</td><td>사용중</td><td class="favorite-toggle">★</td><td><button class="write-button">기록 작성</button></td></tr>
+        </tbody>
+    </table>
+</section>
